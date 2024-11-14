@@ -1,0 +1,18 @@
+ cd ~/jetson-inference/python/training/classification
+
+python3 train.py --model-dir=models/MNIST data/MNIST --batch-size=32 --workers=1 --epochs=10
+
+python3 onnx_export.py --model-dir=models/MNIST --input=checkpoint.pth.tar
+
+DATASET=data/MNIST
+
+/home/nvidia/jetson-inference/build/aarch64/bin/imagenet --model=models/MNIST/resnet18.onnx --input_blob=input_0 --output_blob=output_0 --labels=$DATASET/labels.txt $DATASET/test/9/151.png 9.png
+
+DATASET=data/MNIST/test
+
+OUTPUT_DIR=test
+
+mkdir -p "$OUTPUT_DIR"
+
+find "$DATASET" -type f -name "*.png" | while read -r image_path; do category=$(basename "$(dirname "$image_path")"); image_name=$(basename "$image_path"); output_category_dir="$OUTPUT_DIR/$category"; mkdir -p "$output_category_dir"; output_image="$output_category_dir/$image_name"; /home/nvidia/jetson-inference/build/aarch64/bin/imagenet --model=models/MNIST/resnet18.onnx --input_blob=input_0 --output_blob=output_0 --labels=data/MNIST/labels.txt "$image_path" "$output_image"; echo "Processed $image_path -> $output_image"; done
+
